@@ -1,0 +1,25 @@
+read unitsPerPlayer:int
+
+gameloop
+read turn:int radius:int
+read myCount:int
+loop myCount read id:int x:int y:int vx:int vy:int stamina:int
+read oppCount:int
+loop oppCount read id:int x:int y:int vx:int vy:int stamina:int
+loop myCount write 0 0 100
+
+INPUT
+unitsPerPlayer: number of units each player starts with
+turn: turn number, starting at 1
+radius: ring radius this turn; a unit whose center ends the turn farther than this from (0, 0) is knocked out
+myCount: your units still in the ring
+oppCount: the opponent's units still in the ring
+id: unit id
+x: position x (the ring is centered on 0 0)
+y: position y
+vx: velocity x, in distance per turn
+vy: velocity y, in distance per turn
+stamina: 0 to 100; DASH costs 40, PLANT costs 25, +6 at the end of every turn
+
+OUTPUT
+x y power [DASH|PLANT] [message]: one line per unit, in input order. Thrust toward (x, y) with power 0-100. DASH multiplies power by 5 this turn; PLANT grips the ground (removes up to 150 speed this turn). Text after that is shown above the unit. The default thrusts every unit at the center (0, 0) at full power, which overshoots: there is no friction.

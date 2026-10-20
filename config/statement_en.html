@@ -1,0 +1,221 @@
+<div class="statement-body">
+	<div class="statement-section statement-goal">
+		<h1>
+			<span class="icon icon-goal">&nbsp;</span>
+			<span>Goal</span>
+		</h1>
+		<p>Sumo with circles. <strong>Push every enemy unit out of the ring before your opponent does the
+			same to you.</strong> Nothing slows down on its own, the ring keeps shrinking, and a well-timed
+			shove is all it takes.</p>
+		<p><span class="statement-lineno">Source code</span> of the referee and viewer:
+			<a href="https://github.com/Waffle3z/CG-Knockout" target="_blank">github.com/Waffle3z/CG-Knockout</a></p>
+	</div>
+
+	<div class="statement-section statement-rules">
+		<h1>
+			<span class="icon icon-rules">&nbsp;</span>
+			<span>Rules</span>
+		</h1>
+		<p>Two players each control <const>6</const> round units on a circular ring centered on
+			<const>(0, 0)</const>, with radius <const>5000</const>. Every unit is a disc of radius
+			<const>400</const>, and all units have the same mass. Both players move at the same time.</p>
+
+		<h3>Moving</h3>
+		<p>Each turn, you give every one of your units a <strong>target point</strong> and a
+			<strong>power</strong> between <const>0</const> and <const>100</const>. The unit accelerates
+			toward the target with that power. There is <strong>no friction</strong>: a unit keeps sliding
+			until it thrusts the other way, plants its feet, or bumps into someone.</p>
+		<p>Units bounce off each other, and pushing is how you win. A unit whose center is outside the
+			ring at the end of a turn is <strong>knocked out</strong> and removed from the game.</p>
+
+		<h3>Stamina, DASH and PLANT</h3>
+		<p>Every unit has <strong>stamina</strong>, between <const>0</const> and <const>100</const>. It
+			starts at <const>100</const> and recovers <const>6</const> at the end of every turn. Instead of a
+			plain move, a unit may use one ability per turn:</p>
+		<ul>
+			<li><action>DASH</action> costs <const>40</const> stamina. That turn, the power is multiplied by
+				<const>5</const> (up to <const>500</const>).</li>
+			<li><action>PLANT</action> costs <const>25</const> stamina. That turn, the unit digs in: its
+				speed is reduced by up to <const>150</const>. Planting stops a slide quickly and resists a
+				single pusher, but two pushers or a DASH will move a planted unit.</li>
+		</ul>
+		<p>A planted unit can still thrust, so planting while thrusting against your motion is the fastest
+			way to brake. If a unit doesn't have enough stamina, the ability is ignored and the move is played
+			as a plain move.</p>
+
+		<h3>The ring shrinks</h3>
+		<p>The ring keeps radius <const>5000</const> for the first <const>100</const> turns. From turn
+			<const>101</const> on, it shrinks by <const>40</const> every turn, down to a minimum radius of
+			<const>500</const>. You receive the current radius every turn.</p>
+
+		<!-- Victory conditions -->
+		<div class="statement-victory-conditions">
+			<div class="icon victory"></div>
+			<div class="blk">
+				<div class="title">Victory Conditions</div>
+				<div class="text">
+					<ul style="padding-top:0; padding-bottom:0;">
+						<li>Every enemy unit has been knocked out, or</li>
+						<li>after <const>225</const> turns, you have more units left than your opponent.</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+		<!-- Lose conditions -->
+		<div class="statement-lose-conditions">
+			<div class="icon lose"></div>
+			<div class="blk">
+				<div class="title">Defeat Conditions</div>
+				<div class="text">
+					<ul style="padding-top:0; padding-bottom:0;">
+						<li>All of your units have been knocked out.</li>
+						<li>Your program does not answer in time, or prints something that is not one valid line
+							per unit. This loses the game immediately, however many units you have left.</li>
+					</ul>
+					If both players lose their last unit on the same turn, or have as many units left after
+					<const>225</const> turns, the game is a draw.
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="statement-section statement-examples">
+		<h1>
+			<span class="icon icon-example">&nbsp;</span>
+			<span>Examples</span>
+		</h1>
+		<p>A unit standing still at <const>(3000, 0)</const> with <const>100</const> stamina, nobody else nearby:</p>
+		<ul>
+			<li><action>0 0 100</action>: it ends the turn at <const>(2938, 0)</const> with velocity
+				<const>(-100, 0)</const>. Next turn it keeps sliding at that speed even with power <const>0</const>.</li>
+			<li><action>0 0 100 DASH</action>: it ends at <const>(2688, 0)</const> with velocity
+				<const>(-500, 0)</const> and <const>66</const> stamina (100 &minus; 40 + 6).</li>
+		</ul>
+		<p>The same unit sliding outward with velocity <const>(300, 0)</const>:</p>
+		<ul>
+			<li><action>0 0 0</action> (no thrust): it coasts to <const>(3300, 0)</const>, still at
+				<const>300</const>.</li>
+			<li><action>0 0 0 PLANT</action>: it brakes to <const>(3244, 0)</const> with velocity
+				<const>(150, 0)</const> and <const>81</const> stamina. Thrusting toward the center at the same
+				time brakes harder.</li>
+		</ul>
+	</div>
+
+	<div class="statement-section statement-expertrules">
+		<h1>
+			<span class="icon icon-expertrules">&nbsp;</span>
+			<span>Expert Rules</span>
+		</h1>
+		<p>The complete simulation of one turn is below, so you can reproduce the referee exactly. Positions
+			and velocities are integers between turns; within a turn, use double-precision floating point. All
+			units are processed in increasing <var>id</var> order.</p>
+<div style="font-family: monospace; font-size: 13px; line-height: 1.55; white-space: nowrap; overflow-x: auto; background: rgba(127,127,127,0.10); padding: 10px 12px; border-radius: 4px; margin: 8px 0;">
+for each unit W:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;p = clamp(power, 0, 100)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;if action is DASH and W.stamina &gt;= 40:&nbsp;&nbsp;&nbsp;W.stamina -= 40;&nbsp;&nbsp;p = p * 5<br>
+&nbsp;&nbsp;&nbsp;&nbsp;if action is PLANT and W.stamina &gt;= 25:&nbsp;&nbsp;W.stamina -= 25;&nbsp;&nbsp;W.planted = true<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(dx, dy) = target - W.pos;&nbsp;&nbsp;d = sqrt(dx*dx + dy*dy)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;W.acc = (dx / d * p, dy / d * p)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# (0, 0) if d == 0<br>
+<br>
+repeat 4 times:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# 4 sub-steps of a quarter turn<br>
+&nbsp;&nbsp;&nbsp;&nbsp;for each unit W:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;W.v += W.acc / 4<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;W.pos += W.v / 4<br>
+&nbsp;&nbsp;&nbsp;&nbsp;for each pair (A, B) with A.id &lt; B.id, in order of (A.id, B.id):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(dx, dy) = B.pos - A.pos;&nbsp;&nbsp;d = sqrt(dx*dx + dy*dy)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if d &lt; 800:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# the discs overlap<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;n = (dx / d, dy / d)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# (1, 0) if d == 0<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;closing = dot(B.v - A.v, n)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if closing &lt; 0:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# moving into each other: bounce<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;j = -0.75 * closing&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# restitution 0.5, equal masses<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A.v -= j * n;&nbsp;&nbsp;B.v += j * n<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;push = (800 - d) / 2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# separate them, half each<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A.pos -= push * n;&nbsp;&nbsp;B.pos += push * n<br>
+&nbsp;&nbsp;&nbsp;&nbsp;for each planted unit W:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# grip: 150 per turn, 37.5 per sub-step<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;s = sqrt(W.vx*W.vx + W.vy*W.vy)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if s &lt;= 37.5:&nbsp;&nbsp;W.v = (0, 0)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;f = (s - 37.5) / s;&nbsp;&nbsp;W.v = (W.vx * f, W.vy * f)<br>
+<br>
+for each unit W:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;W.pos = round(W.pos)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# to the nearest integer, halves away from zero<br>
+&nbsp;&nbsp;&nbsp;&nbsp;W.v = truncate(W.v)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# toward zero<br>
+remove every unit with x*x + y*y &gt; radius*radius<br>
+every remaining unit: stamina = min(100, stamina + 6)
+</div>
+		<p>Each pair is resolved once per sub-step, using the positions and velocities already updated by
+			earlier pairs in that sub-step. To match the referee bit for bit, evaluate expressions in the order
+			written, use <code>sqrt</code> (not <code>hypot</code>) and do not let the compiler fuse
+			multiply-adds (for C++, compile with <code>-ffp-contract=off</code>). The radius used for the
+			knockout test is the one you received this turn. Starting positions are random and
+			point-symmetric: the opponent's units start at the mirror image <const>(-x, -y)</const> of yours.</p>
+	</div>
+
+	<div class="statement-section statement-protocol">
+		<h1>
+			<span class="icon icon-protocol">&nbsp;</span>
+			<span>Game Input/Output</span>
+		</h1>
+		<!-- Protocol block -->
+		<div class="blk">
+			<div class="title">Initialization input</div>
+			<div class="text">
+				<span class="statement-lineno">Line 1:</span> <var>unitsPerPlayer</var>, the number of units each
+				player starts with.
+			</div>
+		</div>
+		<!-- Protocol block -->
+		<div class="blk">
+			<div class="title">Input for one game turn</div>
+			<div class="text">
+				<span class="statement-lineno">Line 1:</span> two integers: <var>turn</var> (starting at
+				<const>1</const>) and <var>radius</var>, the ring radius this turn.<br>
+				<span class="statement-lineno">Next line:</span> <var>myCount</var>, your units still in the ring.<br>
+				<span class="statement-lineno">Next <var>myCount</var> lines:</span> six integers <var>id</var>
+				<var>x</var> <var>y</var> <var>vx</var> <var>vy</var> <var>stamina</var>, in increasing
+				<var>id</var> order. Velocities are in distance per turn.<br>
+				<span class="statement-lineno">Next line:</span> <var>oppCount</var>, the opponent's units still in
+				the ring.<br>
+				<span class="statement-lineno">Next <var>oppCount</var> lines:</span> six integers <var>id</var>
+				<var>x</var> <var>y</var> <var>vx</var> <var>vy</var> <var>stamina</var>, in increasing
+				<var>id</var> order.
+			</div>
+		</div>
+		<!-- Protocol block -->
+		<div class="blk">
+			<div class="title">Output for one game turn</div>
+			<div class="text">
+				<span class="statement-lineno"><var>myCount</var> lines:</span> one per unit, in the order they
+				were given: <action>x y power</action>, optionally followed by <action>DASH</action> or
+				<action>PLANT</action>. Anything after that is shown as a message above the unit (its first
+				<const>40</const> characters).<br>
+				Examples: <action>0 0 100</action> &middot; <action>-1200 350 100 DASH</action> &middot;
+				<action>2000 0 0 PLANT hold!</action>
+			</div>
+		</div>
+		<!-- Protocol block -->
+		<div class="blk">
+			<div class="title">Constraints</div>
+			<div class="text">
+				<var>unitsPerPlayer</var> = <const>6</const><br>
+				<const>-100000</const> &le; target <var>x</var>, <var>y</var> &le; <const>100000</const><br>
+				<const>0</const> &le; <var>power</var> &le; <const>100</const><br>
+				Response time for the first turn &le; <const>1000</const> ms<br>
+				Response time per turn &le; <const>50</const> ms
+			</div>
+		</div>
+	</div>
+
+	<div class="statement-section statement-league">
+		<h1>
+			<span>Leagues</span>
+		</h1>
+		<p>The full rules apply in every league. Each league below the top one has a boss to beat:</p>
+		<ul>
+			<li><strong>First league</strong>: every unit charges at the nearest enemy unit.</li>
+			<li><strong>Second league</strong>: every unit rushes to the center and DASHes whenever it can.
+				Joining the crowd in the middle is not enough; you have to push units out of it.</li>
+		</ul>
+		<p>In the <strong>top league</strong>, the default opponent searches a few turns ahead and goes
+			after your most exposed unit.</p>
+	</div>
+</div>
