@@ -147,7 +147,7 @@ every remaining unit: stamina = min(100, stamina + 6)
 			written, use <code>sqrt</code> (not <code>hypot</code>) and do not let the compiler fuse
 			multiply-adds (for C++, compile with <code>-ffp-contract=off</code>). The radius used for the
 			knockout test is the one you received this turn. Starting positions are random and
-			point-symmetric: the opponent's units start at the mirror image <const>(-x, -y)</const> of yours.</p>
+			point-symmetric: the opponent's units start at the mirror image (-<var>x</var>, -<var>y</var>) of yours.</p>
 	</div>
 
 	<div class="statement-section statement-protocol">
@@ -185,7 +185,7 @@ every remaining unit: stamina = min(100, stamina + 6)
 			<div class="title">Output for one game turn</div>
 			<div class="text">
 				<span class="statement-lineno"><var>myCount</var> lines:</span> one per unit, in the order they
-				were given: <action>x y power</action>, optionally followed by <action>DASH</action> or
+				were given: <var>x</var> <var>y</var> <var>power</var>, optionally followed by <action>DASH</action> or
 				<action>PLANT</action>. Anything after that is shown as a message above the unit (its first
 				<const>40</const> characters).<br>
 				Examples: <action>0 0 100</action> &middot; <action>-1200 350 100 DASH</action> &middot;
